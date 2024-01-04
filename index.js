@@ -86,6 +86,36 @@ app.get('/', function(req, res, next) {
   res.json({ msg: 'Server Started' })
 });
 
+
+app.get('/login', async function(req, res, next) {
+  try {
+    // Check if already connected
+    if (sockClient && sockClient.sessionInfo) {
+      res.send('<html><body>Already logged in</body></html>');
+      return;
+    }
+
+    // Generate QR code and convert it to a data URI
+    const qrCode = await sockClient.generateQR();
+    const dataUri = `data:image/png;base64,${qrCode.base64}`;
+
+    // Return an HTML page with the QR code
+    const html = `
+      <html>
+        <body>
+          <img src="${dataUri}" alt="QR Code">
+          <p>Scan the QR code to log in</p>
+        </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    res.status(500).send('<html><body>Internal Server Error</body></html>');
+  }
+});
+
+
 app.post('/sendWa', function(req, res, next) {
   var phone = getJid(req.body.phone.toString());
   var body = req.body.msg;
