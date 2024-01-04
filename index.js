@@ -3,6 +3,7 @@ var { Boom } = require('@hapi/boom');
 const fs = require('fs');
 
 var sockClient = "";
+var qrCode = "";
 
 async function connectToWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_goyalinfocom');
@@ -16,7 +17,8 @@ async function connectToWhatsApp() {
   });
 
   sockClient.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update
+    const { connection, lastDisconnect,qr } = update;
+    qrCode = qr;
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut
       console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
@@ -94,9 +96,7 @@ app.get('/login', async function(req, res, next) {
       res.send('<html><body>Already logged in</body></html>');
       return;
     }
-
-    // Generate QR code and convert it to a data URI
-    const qrCode = await sockClient.generateQR();
+    
     const dataUri = `data:image/png;base64,${qrCode.base64}`;
 
     // Return an HTML page with the QR code
