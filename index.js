@@ -74,7 +74,7 @@ const server = require('http').createServer(app);
 //     methods: ["GET", "POST"]
 //   }
 // });
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
