@@ -1,6 +1,7 @@
 const { default: makeConn, DisconnectReason, BufferJSON, useMultiFileAuthState, MessageType, MessageOptions, Mimetype } = require('@whiskeysockets/baileys');
 var { Boom } = require('@hapi/boom');
 const fs = require('fs');
+const qrcode = require('qrcode');
 
 var sockClient = "";
 var qrCode = "";
@@ -17,8 +18,9 @@ async function connectToWhatsApp() {
   });
 
   sockClient.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect,qr } = update;
-    qrCode = qr;
+    qrCode = update.qr;
+    const { connection, lastDisconnect } = update;
+    console.log('connection update', update);
     if (connection === 'close') {
       const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut
       console.log('connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect)
@@ -96,19 +98,28 @@ app.get('/login', async function(req, res, next) {
       res.send('<html><body>Already logged in</body></html>');
       return;
     }
-    
-    const dataUri = `data:image/png;base64,${qrCode.base64}`;
 
-    // Return an HTML page with the QR code
-    const html = `
-      <html>
-        <body>
-          <img src="${dataUri}" alt="QR Code">
-          <p>Scan the QR code to log in</p>
-        </body>
-      </html>
-    `;
-    res.send(html);
+    const qrCodeData = qrCode; // Replace with your actual QR code data
+
+    // Generate QR code and convert it to a data URI
+    qrcode.toDataURL(qrCodeData, (err, dataUri) => {
+      if (err) {
+        console.error('Error generating QR code:', err);
+        res.status(500).send('<html><body>Internal Server Error</body></html>');
+        return;
+      }
+
+      // Return an HTML page with the QR code
+      const html = `
+        <html>
+          <body>
+            <img src="${dataUri}" alt="QR Code">
+            <p>Scan the QR code to log in</p>
+          </body>
+        </html>
+      `;
+      res.send(html);
+    });
   } catch (error) {
     console.error('Error generating QR code:', error);
     res.status(500).send('<html><body>Internal Server Error</body></html>');
